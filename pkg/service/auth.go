@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/onemgvv/go-api-server/pkg/entity"
 	"github.com/onemgvv/go-api-server/pkg/repository"
@@ -43,6 +44,27 @@ func (s *AuthService) GenerateToken(email, password string) (string, error) {
 	})
 
 	return token.SignedString([]byte(signingKey))
+}
+
+func (s *AuthService) ParseToken(accessToken string) (int, error) {
+	token, err := jwt.ParseWithClaims(accessToken, &TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
+		}
+
+		return []byte(signingKey), nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	claims, ok := token.Claims.(*TokenClaims)
+	if !ok {
+		return 0, errors.New("token claims are not of type *TokenClaims")
+	}
+
+	return claims.UserId, nil
 }
 
 func NewAuthService(repo repository.Authorization) *AuthService {

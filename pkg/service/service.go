@@ -8,6 +8,7 @@ import (
 type Authorization interface {
 	CreateUser(user entity.User) (int, error)
 	GenerateToken(email, password string) (string, error)
+	ParseToken(token string) (int, error)
 }
 
 type Users interface {
