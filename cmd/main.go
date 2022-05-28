@@ -7,18 +7,20 @@ import (
 	"github.com/onemgvv/go-api-server/pkg/handler"
 	"github.com/onemgvv/go-api-server/pkg/repository"
 	"github.com/onemgvv/go-api-server/pkg/service"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"log"
 	"os"
 )
 
 func main() {
+	logrus.SetFormatter(new(logrus.JSONFormatter))
+
 	if err := initConfig(); err != nil {
-		log.Fatalf("error config initialization: %s", err.Error())
+		logrus.Fatalf("error config initialization: %s", err.Error())
 	}
 
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("error loading environment variables %s", err.Error())
+		logrus.Fatalf("error loading environment variables %s", err.Error())
 	}
 
 	db, err := repository.NewPostgresDB(repository.Config{
@@ -31,7 +33,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.Fatalf("failed to initialize db: %s", err.Error())
+		logrus.Fatalf("failed to initialize db: %s", err.Error())
 	}
 
 	repos := repository.NewRepository(db)
@@ -40,7 +42,7 @@ func main() {
 
 	server := new(goApiServer.Server)
 	if err := server.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
-		log.Fatalf("error occured white running http server: %s", err.Error())
+		logrus.Fatalf("error occured white running http server: %s", err.Error())
 	}
 
 }
