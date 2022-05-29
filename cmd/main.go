@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/onemgvv/go-api-server"
@@ -10,8 +11,20 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
+// @title Go API Service
+// @version 0.1
+// @description API Server Template for GO Apps
+
+// @host localhost:8000
+// @basePath /
+
+// @securityDefinitions.apiKey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	logrus.SetFormatter(new(logrus.JSONFormatter))
 
@@ -41,10 +54,26 @@ func main() {
 	handlers := handler.NewHandler(services)
 
 	server := new(goApiServer.Server)
-	if err := server.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
-		logrus.Fatalf("error occured white running http server: %s", err.Error())
+	go func() {
+		if err := server.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
+			logrus.Fatalf("error occured white running http server: %s", err.Error())
+		}
+	}()
+	logrus.Print("App started")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	<-quit
+
+	logrus.Print("Application shutting down")
+
+	if err := server.Shutdown(context.Background()); err != nil {
+		logrus.Errorf("Error occured on server shutting down: %s", err.Error())
 	}
 
+	if err := db.Close(); err != nil {
+		logrus.Errorf("Error occured on db connection close: %s", err.Error())
+	}
 }
 
 func initConfig() error {
