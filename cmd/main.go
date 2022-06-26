@@ -5,9 +5,9 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/onemgvv/go-api-server"
-	"github.com/onemgvv/go-api-server/pkg/handler"
-	"github.com/onemgvv/go-api-server/pkg/repository"
-	"github.com/onemgvv/go-api-server/pkg/service"
+	"github.com/onemgvv/go-api-server/internal/delivery/http"
+	repository2 "github.com/onemgvv/go-api-server/internal/repository"
+	"github.com/onemgvv/go-api-server/internal/service"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"os"
@@ -36,7 +36,7 @@ func main() {
 		logrus.Fatalf("error loading environment variables %s", err.Error())
 	}
 
-	db, err := repository.NewPostgresDB(repository.Config{
+	db, err := repository2.NewPostgresDB(repository2.Config{
 		Host:     viper.GetString("db.host"),
 		Port:     viper.GetString("db.port"),
 		Username: viper.GetString("db.username"),
@@ -49,9 +49,9 @@ func main() {
 		logrus.Fatalf("failed to initialize db: %s", err.Error())
 	}
 
-	repos := repository.NewRepository(db)
+	repos := repository2.NewRepository(db)
 	services := service.NewService(repos)
-	handlers := handler.NewHandler(services)
+	handlers := http.NewHandler(services)
 
 	server := new(goApiServer.Server)
 	go func() {

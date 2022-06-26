@@ -2,7 +2,7 @@ package repository
 
 import (
 	"github.com/jmoiron/sqlx"
-	"github.com/onemgvv/go-api-server/pkg/entity"
+	"github.com/onemgvv/go-api-server/internal/entity"
 )
 
 type Authorization interface {

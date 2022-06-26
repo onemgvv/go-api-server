@@ -1,7 +1,22 @@
-port: "8000"
-db:
-  username: "postgres"
-  host: "localhost"
-  port: "5432"
-  dbname: "go_db"
-  sslmode: "disable"
+http:
+  port: 5000
+  timeouts:
+    read: 10s
+    write: 10s
+  maxHeaderMegabytes: 2
+
+cache:
+  ttl: 60s
+
+limiter:
+  rps: 10
+  burst: 20
+  ttl: 10m
+
+database:
+  postgres:
+    user: "postgres"
+    host: "localhost"
+    port: "5432"
+    dbname: "go_db"
+    sslMode: "disable"

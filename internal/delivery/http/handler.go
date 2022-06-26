@@ -1,8 +1,8 @@
-package handler
+package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/onemgvv/go-api-server/pkg/service"
+	"github.com/onemgvv/go-api-server/internal/service"
 )
 
 type Handler struct {

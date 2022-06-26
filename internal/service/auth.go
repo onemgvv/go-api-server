@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/onemgvv/go-api-server/pkg/entity"
-	"github.com/onemgvv/go-api-server/pkg/repository"
+	"github.com/onemgvv/go-api-server/internal/entity"
+	"github.com/onemgvv/go-api-server/internal/repository"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"time"

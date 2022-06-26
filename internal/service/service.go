@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/onemgvv/go-api-server/pkg/entity"
-	"github.com/onemgvv/go-api-server/pkg/repository"
+	"github.com/onemgvv/go-api-server/internal/entity"
+	"github.com/onemgvv/go-api-server/internal/repository"
 )
 
 type Authorization interface {
