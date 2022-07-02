@@ -6,11 +6,11 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/onemgvv/go-api-server/internal/config"
 	deliveryHttp "github.com/onemgvv/go-api-server/internal/delivery/http"
+	"github.com/onemgvv/go-api-server/internal/logger"
 	"github.com/onemgvv/go-api-server/internal/repository"
 	"github.com/onemgvv/go-api-server/internal/server"
 	"github.com/onemgvv/go-api-server/internal/service"
 	"github.com/onemgvv/go-api-server/pkg/database/postgres"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -32,17 +32,17 @@ const configDir = "configs"
 // @name Authorization
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("[ENV Load] || [Failed]: %s", err.Error())
+		logger.ErrorLogger.Fatalf("[ENV Load] || [Failed]: %s", err.Error())
 	}
 
 	cfg, err := config.Init(configDir)
 	if err != nil {
-		log.Fatalf("[Config Load] || [Failed]: %s", err.Error())
+		logger.ErrorLogger.Fatalf("[Config Load] || [Failed]: %s", err.Error())
 	}
 
 	db, err := postgres.Init(cfg)
 	if err != nil {
-		log.Fatalf("[Database INIT] || [Failed]: %s", err.Error())
+		logger.ErrorLogger.Fatalf("[Database INIT] || [Failed]: %s", err.Error())
 	}
 
 	repositories := repository.NewRepository(db)
@@ -56,11 +56,11 @@ func main() {
 
 	go func() {
 		if err = app.Run(); !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("[SERVER START] || [FAILED]: %s", err.Error())
+			logger.ErrorLogger.Fatalf("[SERVER START] || [FAILED]: %s", err.Error())
 		}
 	}()
 
-	log.Println("Application started")
+	logger.InfoLogger.Info("Application started")
 
 	/**
 	 *	Graceful Shutdown
@@ -74,10 +74,12 @@ func main() {
 	defer shutdown()
 
 	if err = app.Shutdown(ctx); err != nil {
-		log.Fatalf("[SERVER STOP] || [FAILED]: %s", err.Error())
+		logger.ErrorLogger.Fatalf("[SERVER STOP] || [FAILED]: %s", err.Error())
 	}
 
 	if err = postgres.Close(db); err != nil {
-		log.Fatalf("[DATABASE CONN CLOSE] || [FAILED]: %s", err.Error())
+		logger.ErrorLogger.Fatalf("[DATABASE CONN CLOSE] || [FAILED]: %s", err.Error())
 	}
+
+	logger.InfoLogger.Info("Application stopped")
 }

@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
+	"github.com/onemgvv/go-api-server/internal/logger"
 )
 
 type Error struct {
@@ -11,6 +11,6 @@ type Error struct {
 }
 
 func newErrorResponse(c *gin.Context, statusCode int, message string) {
-	logrus.Error(message)
+	logger.ErrorLogger.Errorf("[ERROR FROM RESPONSE]: %s", message)
 	c.AbortWithStatusJSON(statusCode, Error{statusCode, message})
 }
