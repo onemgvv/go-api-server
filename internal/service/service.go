@@ -11,20 +11,21 @@ type Authorization interface {
 	ParseToken(token string) (int, error)
 }
 
-type Users interface {
-}
-
 type User interface {
 }
 
 type Service struct {
 	Authorization
-	Users
 	User
 }
 
-func NewService(repos *repository.Repository) *Service {
+type Deps struct {
+	Repos *repository.Repository
+}
+
+func NewService(deps *Deps) *Service {
+	authService := NewAuthService(deps.Repos.User)
 	return &Service{
-		Authorization: NewAuthService(repos.Authorization),
+		Authorization: authService,
 	}
 }

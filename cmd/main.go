@@ -2,18 +2,23 @@ package main
 
 import (
 	"context"
+	"errors"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
-	"github.com/onemgvv/go-api-server"
-	"github.com/onemgvv/go-api-server/internal/delivery/http"
-	repository2 "github.com/onemgvv/go-api-server/internal/repository"
+	"github.com/onemgvv/go-api-server/internal/config"
+	deliveryHttp "github.com/onemgvv/go-api-server/internal/delivery/http"
+	"github.com/onemgvv/go-api-server/internal/repository"
+	"github.com/onemgvv/go-api-server/internal/server"
 	"github.com/onemgvv/go-api-server/internal/service"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"github.com/onemgvv/go-api-server/pkg/database/postgres"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
+
+const configDir = "configs"
 
 // @title Go API Service
 // @version 0.1
@@ -26,58 +31,53 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	logrus.SetFormatter(new(logrus.JSONFormatter))
-
-	if err := initConfig(); err != nil {
-		logrus.Fatalf("error config initialization: %s", err.Error())
-	}
-
 	if err := godotenv.Load(); err != nil {
-		logrus.Fatalf("error loading environment variables %s", err.Error())
+		log.Fatalf("[ENV Load] || [Failed]: %s", err.Error())
 	}
 
-	db, err := repository2.NewPostgresDB(repository2.Config{
-		Host:     viper.GetString("db.host"),
-		Port:     viper.GetString("db.port"),
-		Username: viper.GetString("db.username"),
-		DBName:   viper.GetString("db.dbname"),
-		SSLMode:  viper.GetString("db.sslmode"),
-		Password: os.Getenv("DB_PASSWORD"),
+	cfg, err := config.Init(configDir)
+	if err != nil {
+		log.Fatalf("[Config Load] || [Failed]: %s", err.Error())
+	}
+
+	db, err := postgres.Init(cfg)
+	if err != nil {
+		log.Fatalf("[Database INIT] || [Failed]: %s", err.Error())
+	}
+
+	repositories := repository.NewRepository(db)
+	services := service.NewService(&service.Deps{
+		Repos: repositories,
 	})
 
-	if err != nil {
-		logrus.Fatalf("failed to initialize db: %s", err.Error())
-	}
+	handlers := deliveryHttp.NewHandler(services)
 
-	repos := repository2.NewRepository(db)
-	services := service.NewService(repos)
-	handlers := http.NewHandler(services)
+	app := server.NewServer(cfg, handlers.InitRoutes())
 
-	server := new(goApiServer.Server)
 	go func() {
-		if err := server.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
-			logrus.Fatalf("error occured white running http server: %s", err.Error())
+		if err = app.Run(); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("[SERVER START] || [FAILED]: %s", err.Error())
 		}
 	}()
-	logrus.Print("App started")
 
+	log.Println("Application started")
+
+	/**
+	 *	Graceful Shutdown
+	 */
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
 
-	logrus.Print("Application shutting down")
+	const timeout = 5 * time.Second
+	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
+	defer shutdown()
 
-	if err := server.Shutdown(context.Background()); err != nil {
-		logrus.Errorf("Error occured on server shutting down: %s", err.Error())
+	if err = app.Shutdown(ctx); err != nil {
+		log.Fatalf("[SERVER STOP] || [FAILED]: %s", err.Error())
 	}
 
-	if err := db.Close(); err != nil {
-		logrus.Errorf("Error occured on db connection close: %s", err.Error())
+	if err = postgres.Close(db); err != nil {
+		log.Fatalf("[DATABASE CONN CLOSE] || [FAILED]: %s", err.Error())
 	}
-}
-
-func initConfig() error {
-	viper.AddConfigPath("configs")
-	viper.SetConfigName("config")
-	return viper.ReadInConfig()
 }

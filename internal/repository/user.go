@@ -6,15 +6,15 @@ import (
 	"github.com/onemgvv/go-api-server/internal/entity"
 )
 
-type AuthPostgres struct {
+type UserRepository struct {
 	db *sqlx.DB
 }
 
-func NewAuthPostgres(db *sqlx.DB) *AuthPostgres {
-	return &AuthPostgres{db: db}
+func NewUserRepository(db *sqlx.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-func (r *AuthPostgres) CreateUser(user entity.User) (int, error) {
+func (r *UserRepository) CreateUser(user entity.User) (int, error) {
 	var id int
 	query := fmt.Sprintf("INSERT INTO %s (username, email, password) values ($1, $2, $3) RETURNING id", userTable)
 
@@ -26,7 +26,7 @@ func (r *AuthPostgres) CreateUser(user entity.User) (int, error) {
 	return id, nil
 }
 
-func (r *AuthPostgres) GetUser(email string) (entity.User, error) {
+func (r *UserRepository) GetUser(email string) (entity.User, error) {
 	var user entity.User
 	query := fmt.Sprintf("SELECT id, password FROM %s WHERE email=$1", userTable)
 	err := r.db.Get(&user, query, email)
